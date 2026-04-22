@@ -7,6 +7,7 @@ import os
 from datetime import datetime
 import calendar
 import pandas as pd
+from openpyxl import load_workbook
 
 
 
@@ -99,12 +100,17 @@ def send_email (email, filepath):
     outlook_ap = outlook.GetNamespace("MAPI")
     mail = outlook.CreateItem(0)
 
+    wb = load_workbook(filepath)
+    wb._sheets = [wb[s] for s in ["Summary","Actual vs. Schedu"]]
+    wb.save(filepath)
+
     mail.Attachments.Add(filepath)
 
     mail.To = email
     mail.Subject = f'See attached file, for Paycom Data for the date: {datetoday.strftime("%m/%d/%Y")}'
     mail.Send()
     print('Email Sent')
+    os.remove(filepath)
 
 
 
