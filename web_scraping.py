@@ -6,6 +6,8 @@ import win32com.client as win32
 import os
 from datetime import datetime
 import calendar
+import pandas as pd
+
 
 
 load_dotenv()
@@ -17,6 +19,7 @@ local_path = env.paycom_local
 email = env.sendemail
 
 datetoday = datetime.today()
+
 
 
 outlook = win32.Dispatch("Outlook.Application")
@@ -31,7 +34,7 @@ def paycom_scraping(weblink, username, password, client_code):
             context = p.chromium.launch_persistent_context(
                     user_data_dir="edge_automation_profile",
                     channel="msedge",
-                    headless=False
+                    headless=True
                 )
 
 
@@ -54,12 +57,42 @@ def paycom_scraping(weblink, username, password, client_code):
             file_folder = os.path.join(local_path, 'HR Files')
             os.makedirs(file_folder, exist_ok=True)
 
-            download.save_as(os.path.join(file_folder, download.suggested_filename))
+            file_name =  f'OT_report_{datetoday.strftime("%Y%m%d")}.xlsx'
 
-            return f"{str(file_folder)}\{download.suggested_filename}"
+            download.save_as(os.path.join(file_folder,file_name))
+
+            return f"{str(file_folder)}\{file_name}"
 
     except Exception as e:
         print(e)
+
+def create_sheet(filepath, data_row, sheetname):
+    if isinstance(data_row, list):
+        df = pd.DataFrame(data_row)
+    elif isinstance(data_row, dict):
+        df = pd.DataFrame([data_row])
+    
+    with pd.ExcelWriter(filepath, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+        df.to_excel(writer,  sheet_name=sheetname, index=False)
+
+
+def create_report(file):
+    df = pd.read_excel(file)
+
+    cols = ["Scheduled Hours", "Actual Hours", "Variance"]
+    df[cols] = df[cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+
+    
+    summary = (
+        df.groupby("Employee", as_index=False)
+        .agg({
+            "Scheduled Hours": "sum",
+            "Actual Hours": "sum",
+            "Variance": "sum",
+        })
+    )
+
+    create_sheet(file, summary.to_dict(orient="records"), "Summary")
 
 def send_email (email, filepath):
     outlook = win32.Dispatch("Outlook.Application")
@@ -76,4 +109,5 @@ def send_email (email, filepath):
 
 
 paycom_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code)
+create_report(paycom_filepath)
 send_email(email, paycom_filepath)
