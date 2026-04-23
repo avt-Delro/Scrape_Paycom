@@ -11,6 +11,7 @@ from openpyxl import load_workbook
 
 
 
+
 load_dotenv()
 paycom_user = env.paycom_username
 paycom_pass = env.paycom_password  
@@ -83,16 +84,19 @@ def create_report(file):
     cols = ["Scheduled Hours", "Actual Hours", "Variance"]
     df[cols] = df[cols].apply(pd.to_numeric, errors="coerce").fillna(0)
 
-    
+    df['Punch Date'] = pd.to_datetime(df['Punch Date'], errors='coerce')
+
+    df_filtered = df[df['Punch Date']<= datetoday.strftime('%m/%d/%Y')]
+
+
     summary = (
-        df.groupby("Employee", as_index=False)
+        df_filtered.groupby("Employee", as_index=False)
         .agg({
             "Scheduled Hours": "sum",
             "Actual Hours": "sum",
             "Variance": "sum",
         })
     )
-
     create_sheet(file, summary.to_dict(orient="records"), "Summary")
 
 def send_email (email, filepath):
