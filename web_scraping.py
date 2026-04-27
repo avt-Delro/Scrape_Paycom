@@ -99,6 +99,7 @@ def create_report(file):
     )
     create_sheet(file, summary.to_dict(orient="records"), "Summary")
 
+
 def send_email (email, filepath):
     outlook = win32.Dispatch("Outlook.Application")
     outlook_ap = outlook.GetNamespace("MAPI")
@@ -108,10 +109,67 @@ def send_email (email, filepath):
     wb._sheets = [wb[s] for s in ["Summary","Actual vs. Schedu"]]
     wb.save(filepath)
 
+    df = pd.read_excel(filepath, sheet_name="Summary")
+
+    df_without_scheduled_hours = df.loc[df['Scheduled Hours'] == 0, ['Employee', 'Scheduled Hours', 'Actual Hours']]
+    df_negative_variance = df.loc[df['Variance'] < 0, ['Employee', 'Variance']]
+    df_positive_variance = df.loc[df['Variance'] > 0, ['Employee', 'Variance']]
+
+    html_without = df_without_scheduled_hours.to_html(index=False)
+    html_negative = df_negative_variance.to_html(index=False)
+    html_positive = df_positive_variance.to_html(index=False)
+    html_df = df.to_html(index=False)
+
+
+
     mail.Attachments.Add(filepath)
 
     mail.To = email
-    mail.Subject = f'See attached file, for Paycom Data for the date: {datetoday.strftime("%m/%d/%Y")}'
+    mail.Subject = f'OT Report: {datetoday.strftime("%m/%d/%Y")}'
+    mail.HTMLBody = f"""
+        <html>
+        <head>
+        <style>
+        table {{
+            border-collapse: collapse;
+            width: 75%;
+        }}
+        th, td {{
+            padding: 8px;
+            text-align: left;
+        }}
+        th {{
+            background-color: #FF2B3F;
+        }}
+        </style>
+        </head>
+        <body>
+            <p>Good day, Here are the summary of work hours as of: {datetoday.strftime("%m/%d/%Y")}</p>
+
+            <p>Attached is the report file: {os.path.basename(filepath)}</p>
+
+            <h1>Employees without Scheduled Hours</h1>
+            {html_without}
+            <br>
+
+            <h1>Employees with Negative Variance</h1>
+            {html_negative}
+            <br>
+
+            <h1>Employees with Positive Variance</h1>
+            {html_positive}
+            <br>
+
+            <h2>Summary of the Report:</h2>
+            {html_df}
+            <br>
+
+            <p>Thank you,<br>
+            Automated Reporting System</p>
+        </body>
+        </html>
+        """
+    
     mail.Send()
     print('Email Sent')
     os.remove(filepath)
