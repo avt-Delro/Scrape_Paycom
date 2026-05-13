@@ -128,7 +128,7 @@ def create_report(file):
         create_report_summary(os.path.join(sheet_folder, file), 'Sheet1')
 
 
-def send_email (email, filepath):
+def send_email (filepath):
     outlook = win32.Dispatch("Outlook.Application")
     outlook_ap = outlook.GetNamespace("MAPI")
     sheet_folder = os.path.join(local_path, 'sheet')
@@ -141,6 +141,7 @@ def send_email (email, filepath):
 
         subject_header = config.loc[config['Group_Code'] == int(sheet_number), 'NAME_sched'].values[0]
         emailto = config.loc[config['Group_Code']== int(sheet_number), 'SEND_to'].values[0]
+        ccto = config.loc[config['Group_Code']== int(sheet_number), 'CC_S'].values[0]
 
         # Commented because this is for the summary 
         df_without_scheduled_hours = df.loc[df['Scheduled Hours'] == 0, ['Employee', 'Scheduled Hours', 'Actual Hours']]
@@ -155,6 +156,7 @@ def send_email (email, filepath):
         mail.Attachments.Add(os.path.join(sheet_folder, file))
 
         mail.To = emailto
+        mail.CC = ccto
         mail.Subject = f'OT Report: {datetoday.strftime("%m/%d/%Y")} {subject_header}'
         mail.HTMLBody = f"""
             <html>
@@ -209,7 +211,7 @@ def send_email (email, filepath):
 
 paycom_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code)
 create_report(paycom_filepath)
-send_email(email, paycom_filepath)
+send_email(paycom_filepath)
 
 
 
