@@ -30,7 +30,7 @@ config = pd.read_csv('config/config.csv')
 
 
 
-def paycom_scraping(weblink, username, password, client_code):
+def paycom_scraping(weblink, username, password, client_code, int_choice = 1):
     try:
         with sync_playwright() as p:
             date = datetoday.strftime("%m/%d/%Y")
@@ -54,8 +54,14 @@ def paycom_scraping(weblink, username, password, client_code):
             page.goto("https://www.paycomonline.net/v4/cl/rpt-center.php",wait_until='networkidle')
             page.get_by_role("tab", name="Push Reporting™").click()
             page.get_by_role("tab", name="Saved Reports").click()
-            page.get_by_role("row", name="Favorite Actual v Scheduled w").locator("input[type=\"button\"]").click()
-            page.wait_for_load_state("load") 
+            if int_choice == 1:
+                page.get_by_role("row", name="Favorite Actual v Scheduled w").locator("input[type=\"button\"]").click()
+            elif int_choice == 2:
+                page.get_by_role("row", name="Favorite Missing Punches w").locator("input[type=\"button\"]").click()
+            elif int_choice == 3:
+                page.get_by_role("row", name="Favorite CLP w Groups Time").locator("input[type=\"button\"]").click()
+            page.get_by_role("button", name="Download").wait_for(state = 'visible')
+            
             
             with page.expect_download() as download_info:
                 page.get_by_role("button", name="Download").click()
@@ -65,7 +71,12 @@ def paycom_scraping(weblink, username, password, client_code):
             file_folder = os.path.join(local_path, 'HR Files')
             os.makedirs(file_folder, exist_ok=True)
 
-            file_name =  f'OT_report_{datetoday.strftime("%Y%m%d")}.xlsx'
+            if int_choice == 1:
+                file_name =  f'OT_report_{datetoday.strftime("%Y%m%d")}.xlsx'
+            elif int_choice == 2:
+                file_name =  f'MissingPunches_report_{datetoday.strftime("%Y%m%d")}.xlsx'
+            elif int_choice == 3:
+                file_name =  f'CLP_report_{datetoday.strftime("%Y%m%d")}.xlsx'
 
             download.save_as(os.path.join(file_folder,file_name))
 
@@ -177,7 +188,7 @@ def send_email (filepath):
             </head>
             <body>
                 <p>Good day, Here are the summary of work hours as of: {datetoday.strftime("%m/%d/%Y")}</p>
-                <p>Attached is the report file: {os.path.basename(filepath)}</p>
+                <p>Attached is from the report file: {os.path.basename(filepath)}</p>
 
                 <h2>Summary of the Report:</h2>
                 {html_df}
@@ -207,11 +218,123 @@ def send_email (filepath):
         
     os.remove(filepath)
 
+def create_missing_report(file):
+    df = pd.read_excel(file)
+
+    sheet_folder = os.path.join(local_path, 'sheet_missing')
+    os.makedirs(sheet_folder, exist_ok=True)
+
+    for group, df_group in df.groupby('Schedule Group.1'):
+        exc_filepath = f'{group}.xlsx'
+        df_group.to_excel(os.path.join(sheet_folder, exc_filepath))
+        print(f'Created file for {group}')
+
+def create_clp_summary(file):
+    df = pd.read_excel(file)
+
+    #Since Duplicate column headers, Pandas renamed the second column .1
+    summary = (
+        df.groupby("EECode", as_index=False)
+        .agg({
+            "EarnHours": "sum",
+        })
+    )
+    create_sheet(file, summary.to_dict(orient="records"), 'Summary')
+
+def create_clp_report(file):
+    df = pd.read_excel(file)
+
+    sheet_folder = os.path.join(local_path, 'sheet_clp')
+    os.makedirs(sheet_folder, exist_ok=True)
+
+    for group, df_group in df.groupby('Schedule Group.1'):
+        exc_filepath = f'{group}.xlsx'
+        df_group.to_excel(os.path.join(sheet_folder, exc_filepath))
+        print(f'Created file for {group}')
+    
+    for file in os.listdir(sheet_folder):
+        create_clp_summary(os.path.join(sheet_folder, file))
 
 
-paycom_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code)
+
+def send_email_missing(filepath):
+    outlook = win32.Dispatch("Outlook.Application")
+    
+    outlook_ap = outlook.GetNamespace("MAPI")
+    sheet_folder = os.path.join(local_path, 'sheet_missing')
+
+    for file in os.listdir(sheet_folder):
+        mail = outlook.CreateItem(0)
+        df = pd.read_excel(os.path.join(sheet_folder, file))
+
+        sheet_number = str(os.path.basename(file)).replace('.xlsx', '')
+
+        try:
+            subject_header = config.loc[config['Group_Code'] == int(sheet_number), 'NAME_sched'].values[0]
+            emailto = config.loc[config['Group_Code']== int(sheet_number), 'SEND_to'].values[0]
+            ccto = config.loc[config['Group_Code']== int(sheet_number), 'CC_S'].values[0]
+        except Exception as e:
+            subject_header = 'Schedule Group Not in Config'
+            emailto = 'vjdelrosario@avatco.com'
+            ccto = 'vjdelrosario@avatco.com;TTPhan@avatco.com'
+            print(f'Exception: {e}')
+
+        df_missing_summary = df[['EE Code', 'Last Name', 'First Name', 'In Punch Time', 'Out Punch Time']]
+        df_missing_summary_to_html = df_missing_summary.to_html(index=False)
+
+        mail.Attachments.Add(os.path.join(sheet_folder, file))
+
+        mail.To = emailto
+        mail.CC = ccto
+        mail.Subject = f'Missing Punches Report: {datetoday.strftime("%m/%d/%Y")} {subject_header}'
+        mail.HTMLBody = f"""
+            <html>
+            <head>
+            <style>
+            table {{
+                border-collapse: collapse;
+                width: 75%;
+            }}
+            th, td {{
+                padding: 8px;
+                text-align: left;
+            }}
+            th {{
+                background-color: #FF2B3F;
+            }}
+            </style>
+            </head>
+            <body>
+                <p>Good day, Here are the summary of work hours as of: {datetoday.strftime("%m/%d/%Y")}</p>
+                <p>Attached is from the report file: {os.path.basename(filepath)}</p>
+
+                <h2>Summary of the Report:</h2>
+                {df_missing_summary_to_html}
+                <br>
+                <p>Thank you,<br>
+                Automated Reporting System</p>
+            </body>
+            </html>
+            """
+        
+        mail.Send()
+        print('Email Sent')
+        
+    os.remove(filepath)
+
+
+
+
+
+paycom_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 1)
 create_report(paycom_filepath)
 send_email(paycom_filepath)
+missingpunches_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 2)
+create_missing_report(missingpunches_filepath)
+send_email_missing(missingpunches_filepath)
+# clp_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 3)
+# create_clp_report(clp_filepath)
+
 
 
 
