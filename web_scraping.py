@@ -234,10 +234,7 @@ def create_clp_summary(file):
 
     #Since Duplicate column headers, Pandas renamed the second column .1
     summary = (
-        df.groupby("EECode", as_index=False)
-        .agg({
-            "EarnHours": "sum",
-        })
+        df.groupby(['EECode'], as_index=False)['EarnHours'].sum(min_count = 1)
     )
     create_sheet(file, summary.to_dict(orient="records"), 'Summary')
 
@@ -255,13 +252,11 @@ def create_clp_report(file):
     for file in os.listdir(sheet_folder):
         create_clp_summary(os.path.join(sheet_folder, file))
 
-
-
-def send_email_missing(filepath):
+def send_email_clp(filepath):
     outlook = win32.Dispatch("Outlook.Application")
     
     outlook_ap = outlook.GetNamespace("MAPI")
-    sheet_folder = os.path.join(local_path, 'sheet_missing')
+    sheet_folder = os.path.join(local_path, 'sheet_clp')
 
     for file in os.listdir(sheet_folder):
         mail = outlook.CreateItem(0)
@@ -271,15 +266,18 @@ def send_email_missing(filepath):
 
         try:
             subject_header = config.loc[config['Group_Code'] == int(sheet_number), 'NAME_sched'].values[0]
-            emailto = config.loc[config['Group_Code']== int(sheet_number), 'SEND_to'].values[0]
-            ccto = config.loc[config['Group_Code']== int(sheet_number), 'CC_S'].values[0]
+            #Commented because of testing
+            # emailto = config.loc[config['Group_Code']== int(sheet_number), 'SEND_to'].values[0]
+            # ccto = config.loc[config['Group_Code']== int(sheet_number), 'CC_S'].values[0]
+            emailto = 'vjdelrosario@avatco.com'
+            ccto = 'vjdelrosario@avatco.com;TTPhan@avatco.com'
         except Exception as e:
             subject_header = 'Schedule Group Not in Config'
             emailto = 'vjdelrosario@avatco.com'
             ccto = 'vjdelrosario@avatco.com;TTPhan@avatco.com'
             print(f'Exception: {e}')
 
-        df_missing_summary = df[['EE Code', 'Last Name', 'First Name', 'In Punch Time', 'Out Punch Time']]
+        df_missing_summary = df[['EE Code', 'Date' ,'Last Name', 'First Name', 'In Punch Time', 'Out Punch Time']]
         df_missing_summary_to_html = df_missing_summary.to_html(index=False)
 
         mail.Attachments.Add(os.path.join(sheet_folder, file))
@@ -305,7 +303,74 @@ def send_email_missing(filepath):
             </style>
             </head>
             <body>
-                <p>Good day, Here are the summary of work hours as of: {datetoday.strftime("%m/%d/%Y")}</p>
+                <p>Good day, Here are the summary of CLP as of: {datetoday.strftime("%m/%d/%Y")}</p>
+                <p>Attached is from the report file: {os.path.basename(filepath)}</p>
+
+                <h2>Summary of the Report:</h2>
+                {df_missing_summary_to_html}
+                <br>
+                <p>Thank you,<br>
+                Automated Reporting System</p>
+            </body>
+            </html>
+            """
+        
+        mail.Send()
+        print('Email Sent')
+        
+    os.remove(filepath)
+
+def send_email_missing(filepath):
+    outlook = win32.Dispatch("Outlook.Application")
+    
+    outlook_ap = outlook.GetNamespace("MAPI")
+    sheet_folder = os.path.join(local_path, 'sheet_missing')
+
+    for file in os.listdir(sheet_folder):
+        mail = outlook.CreateItem(0)
+        df = pd.read_excel(os.path.join(sheet_folder, file))
+
+        sheet_number = str(os.path.basename(file)).replace('.xlsx', '')
+
+        try:
+            subject_header = config.loc[config['Group_Code'] == int(sheet_number), 'NAME_sched'].values[0]
+            # emailto = config.loc[config['Group_Code']== int(sheet_number), 'SEND_to'].values[0]
+            # ccto = config.loc[config['Group_Code']== int(sheet_number), 'CC_S'].values[0]
+            emailto = 'vjdelrosario@avatco.com'
+            ccto = 'vjdelrosario@avatco.com;TTPhan@avatco.com'
+        except Exception as e:
+            subject_header = 'Schedule Group Not in Config'
+            emailto = 'vjdelrosario@avatco.com'
+            ccto = 'vjdelrosario@avatco.com;TTPhan@avatco.com'
+            print(f'Exception: {e}')
+
+        df_missing_summary = df[['EE Code', 'Date' ,'Last Name', 'First Name', 'In Punch Time', 'Out Punch Time']]
+        df_missing_summary_to_html = df_missing_summary.to_html(index=False)
+
+        mail.Attachments.Add(os.path.join(sheet_folder, file))
+
+        mail.To = emailto
+        mail.CC = ccto
+        mail.Subject = f'Missing Punches Report: {datetoday.strftime("%m/%d/%Y")} {subject_header}'
+        mail.HTMLBody = f"""
+            <html>
+            <head>
+            <style>
+            table {{
+                border-collapse: collapse;
+                width: 75%;
+            }}
+            th, td {{
+                padding: 8px;
+                text-align: left;
+            }}
+            th {{
+                background-color: #FF2B3F;
+            }}
+            </style>
+            </head>
+            <body>
+                <p>Good day, Here are the summary of missing punches as of: {datetoday.strftime("%m/%d/%Y")}</p>
                 <p>Attached is from the report file: {os.path.basename(filepath)}</p>
 
                 <h2>Summary of the Report:</h2>
@@ -326,14 +391,14 @@ def send_email_missing(filepath):
 
 
 
-paycom_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 1)
-create_report(paycom_filepath)
-send_email(paycom_filepath)
-missingpunches_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 2)
-create_missing_report(missingpunches_filepath)
-send_email_missing(missingpunches_filepath)
-# clp_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 3)
-# create_clp_report(clp_filepath)
+# paycom_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 1)
+# create_report(paycom_filepath)
+# send_email(paycom_filepath)
+# missingpunches_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 2)
+# create_missing_report(missingpunches_filepath)
+# send_email_missing(missingpunches_filepath)
+clp_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 3)
+create_clp_report(clp_filepath)
 
 
 
