@@ -234,7 +234,7 @@ def create_clp_summary(file):
 
     #Since Duplicate column headers, Pandas renamed the second column .1
     summary = (
-        df.groupby(['EECode'], as_index=False)['EarnHours'].sum(min_count = 1)
+        df.groupby(['EECode', 'Lastname', 'Firstname'], as_index=False)['EarnHours'].sum(min_count = 1)
     )
     create_sheet(file, summary.to_dict(orient="records"), 'Summary')
 
@@ -260,7 +260,7 @@ def send_email_clp(filepath):
 
     for file in os.listdir(sheet_folder):
         mail = outlook.CreateItem(0)
-        df = pd.read_excel(os.path.join(sheet_folder, file))
+        df = pd.read_excel(os.path.join(sheet_folder, file), sheet_name='Summary')
 
         sheet_number = str(os.path.basename(file)).replace('.xlsx', '')
 
@@ -277,14 +277,13 @@ def send_email_clp(filepath):
             ccto = 'vjdelrosario@avatco.com;TTPhan@avatco.com'
             print(f'Exception: {e}')
 
-        df_missing_summary = df[['EE Code', 'Date' ,'Last Name', 'First Name', 'In Punch Time', 'Out Punch Time']]
-        df_missing_summary_to_html = df_missing_summary.to_html(index=False)
+        df_missing_summary_to_html = df.to_html(index=False)
 
         mail.Attachments.Add(os.path.join(sheet_folder, file))
 
         mail.To = emailto
         mail.CC = ccto
-        mail.Subject = f'Missing Punches Report: {datetoday.strftime("%m/%d/%Y")} {subject_header}'
+        mail.Subject = f'CLP Report: {datetoday.strftime("%m/%d/%Y")} {subject_header}'
         mail.HTMLBody = f"""
             <html>
             <head>
@@ -391,14 +390,15 @@ def send_email_missing(filepath):
 
 
 
-# paycom_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 1)
-# create_report(paycom_filepath)
-# send_email(paycom_filepath)
-# missingpunches_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 2)
-# create_missing_report(missingpunches_filepath)
-# send_email_missing(missingpunches_filepath)
+paycom_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 1)
+create_report(paycom_filepath)
+send_email(paycom_filepath)
+missingpunches_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 2)
+create_missing_report(missingpunches_filepath)
+send_email_missing(missingpunches_filepath)
 clp_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 3)
 create_clp_report(clp_filepath)
+send_email_clp(clp_filepath)
 
 
 
