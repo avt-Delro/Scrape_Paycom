@@ -173,9 +173,9 @@ def send_email (filepath):
         html_without = df_without_scheduled_hours.to_html(index=False)
         html_without = html_without.replace("<thead", "<thead style='background-color:#FF1A1A; color:white;'")
         html_negative = df_negative_variance.to_html(index=False)
-        html_negative = html_negative.replace("<thead", "<thead style='background-color:#FF1A1A; color:white;'")
+        html_negative = html_negative.replace("<thead", "<thead style='background-color:#1CFF77; color:white;'")
         html_positive = df_positive_variance.to_html(index=False)
-        html_positive = html_positive.replace("<thead", "<thead style='background-color:#1CFF77; color:white;'")
+        html_positive = html_positive.replace("<thead", "<thead style='background-color:#FF1A1A; color:white;'")
         html_df = df.to_html(index=False)
         html_df = html_df.replace("<thead", "<thead style='background-color:#1CFF77; color:white;'")
 

@@ -3,3 +3,4 @@ config/*
 sheet/*
 sheet_clp/*
 sheet_missing/*
+.venv/*
