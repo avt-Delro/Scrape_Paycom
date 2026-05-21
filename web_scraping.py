@@ -60,8 +60,7 @@ def paycom_scraping(weblink, username, password, client_code, int_choice = 1):
                 page.get_by_role("row", name="Favorite Missing Punches w").locator("input[type=\"button\"]").click()
             elif int_choice == 3:
                 page.get_by_role("row", name="Favorite CLP w Groups Time").locator("input[type=\"button\"]").click()
-            page.wait_for_load_state("networkidle")
-            page.get_by_role("button", name="Download").wait_for(timeout= 420000)
+            page.get_by_role("button", name="Download").wait_for(state = 'visible')
             
             
             with page.expect_download() as download_info:
@@ -191,16 +190,16 @@ def send_email (filepath):
                 <p>Good day, Here are the summary of work hours as of: {datetoday.strftime("%m/%d/%Y")}</p>
                 <p>Attached is from the report file: {os.path.basename(filepath)}</p>
 
+                <h2>Summary of the Report:</h2>
+                {html_df}
+                <br>
+
                 <h1>Employees with Positive Variance</h1>
                 {html_positive}
                 <br>
 
                 <h1>Employees with Negative Variance</h1>
                 {html_negative}
-                <br>
-
-                <h2>Summary of the Report:</h2>
-                {html_df}
                 <br>
 
                 <h1>Employees without Scheduled Hours</h1>
@@ -247,20 +246,7 @@ def create_clp_report(file):
 
     for group, df_group in df.groupby('Schedule Group.1'):
         exc_filepath = f'{group}.xlsx'
-        final_df_group = df_group[['EECode', 'Lastname', 'Firstname', 'Dist Department Desc', 'Dist Payroll Profile Code', 'Dist Payroll Profile Desc', 'Dist Job Code', 'Dist Job Desc', 'EarnHours']]
-        final_df_group['Date'] = df_group['InPunchTime']
-        
-        desired_order = ['Date', 'EECode', 'Lastname', 'Firstname',
-                        'Dist Department Desc',
-                        'EarnHours',
-                        'Dist Payroll Profile Code',
-                        'Dist Payroll Profile Desc',
-                        'Dist Job Code',
-                        'Dist Job Desc',
-                        ]
-        final_df_group = final_df_group[desired_order]
-
-        final_df_group.to_excel(os.path.join(sheet_folder, exc_filepath))
+        df_group.to_excel(os.path.join(sheet_folder, exc_filepath))
         print(f'Created file for {group}')
     
     for file in os.listdir(sheet_folder):
@@ -281,8 +267,8 @@ def send_email_clp(filepath):
         try:
             subject_header = config.loc[config['Group_Code'] == int(sheet_number), 'NAME_sched'].values[0]
             #Commented because of testing
-            emailto = config.loc[config['Group_Code']== int(sheet_number), 'SEND_to'].values[0]
-            ccto = config.loc[config['Group_Code']== int(sheet_number), 'CC_S'].values[0]
+            # emailto = config.loc[config['Group_Code']== int(sheet_number), 'SEND_to'].values[0]
+            # ccto = config.loc[config['Group_Code']== int(sheet_number), 'CC_S'].values[0]
             emailto = 'vjdelrosario@avatco.com'
             ccto = 'vjdelrosario@avatco.com;TTPhan@avatco.com'
         except Exception as e:
@@ -291,15 +277,13 @@ def send_email_clp(filepath):
             ccto = 'vjdelrosario@avatco.com;TTPhan@avatco.com'
             print(f'Exception: {e}')
 
-        df['EarnHours'] = pd.to_numeric(df['EarnHours'], errors='coerce').fillna(0)
-        
-        df_missing_summary_to_html = df.loc[(df['EarnHours'] > 0), ['EECode', 'Lastname', 'Firstname', 'EarnHours']].to_html(index=False)
+        df_missing_summary_to_html = df.to_html(index=False)
 
         mail.Attachments.Add(os.path.join(sheet_folder, file))
 
         mail.To = emailto
         mail.CC = ccto
-        mail.Subject = f'CA Meal Penalty Report: {datetoday.strftime("%m/%d/%Y")} {subject_header}'
+        mail.Subject = f'CLP Report: {datetoday.strftime("%m/%d/%Y")} {subject_header}'
         mail.HTMLBody = f"""
             <html>
             <head>
@@ -349,8 +333,8 @@ def send_email_missing(filepath):
 
         try:
             subject_header = config.loc[config['Group_Code'] == int(sheet_number), 'NAME_sched'].values[0]
-            emailto = config.loc[config['Group_Code']== int(sheet_number), 'SEND_to'].values[0]
-            ccto = config.loc[config['Group_Code']== int(sheet_number), 'CC_S'].values[0]
+            # emailto = config.loc[config['Group_Code']== int(sheet_number), 'SEND_to'].values[0]
+            # ccto = config.loc[config['Group_Code']== int(sheet_number), 'CC_S'].values[0]
             emailto = 'vjdelrosario@avatco.com'
             ccto = 'vjdelrosario@avatco.com;TTPhan@avatco.com'
         except Exception as e:
