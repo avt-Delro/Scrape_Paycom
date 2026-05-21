@@ -1,2 +1,5 @@
 config/*
 .env
+sheet/*
+sheet_clp/*
+sheet_missing/*

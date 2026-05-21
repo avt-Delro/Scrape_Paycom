@@ -21,6 +21,8 @@ local_path = env.paycom_local
 email = env.sendemail
 
 datetoday = datetime.today()
+first_day_of_month = datetoday.replace(day=1)
+
 
 
 
@@ -150,9 +152,18 @@ def send_email (filepath):
 
         sheet_number = str(os.path.basename(file)).replace('.xlsx', '')
 
-        subject_header = config.loc[config['Group_Code'] == int(sheet_number), 'NAME_sched'].values[0]
-        emailto = config.loc[config['Group_Code']== int(sheet_number), 'SEND_to'].values[0]
-        ccto = config.loc[config['Group_Code']== int(sheet_number), 'CC_S'].values[0]
+        try:
+            subject_header = config.loc[config['Group_Code'] == int(sheet_number), 'NAME_sched'].values[0]
+            #Commented because of testing
+            emailto = config.loc[config['Group_Code']== int(sheet_number), 'SEND_to'].values[0]
+            ccto = config.loc[config['Group_Code']== int(sheet_number), 'CC_S'].values[0]
+            # emailto = 'vjdelrosario@avatco.com'
+            # ccto = 'vjdelrosario@avatco.com;TTPhan@avatco.com'
+        except Exception as e:
+            subject_header = 'Schedule Group Not in Config'
+            emailto = 'vjdelrosario@avatco.com'
+            ccto = 'vjdelrosario@avatco.com;TTPhan@avatco.com'
+            print(f'Exception: {e}')
 
         # Commented because this is for the summary 
         df_without_scheduled_hours = df.loc[df['Scheduled Hours'] == 0, ['Employee', 'Scheduled Hours', 'Actual Hours']]
@@ -160,15 +171,19 @@ def send_email (filepath):
         df_positive_variance = df.loc[df['Variance'] > 0, ['Employee', 'Variance']]
 
         html_without = df_without_scheduled_hours.to_html(index=False)
+        html_without = html_without.replace("<thead", "<thead style='background-color:#FF1A1A; color:white;'")
         html_negative = df_negative_variance.to_html(index=False)
+        html_negative = html_negative.replace("<thead", "<thead style='background-color:#FF1A1A; color:white;'")
         html_positive = df_positive_variance.to_html(index=False)
+        html_positive = html_positive.replace("<thead", "<thead style='background-color:#1CFF77; color:white;'")
         html_df = df.to_html(index=False)
+        html_df = html_df.replace("<thead", "<thead style='background-color:#1CFF77; color:white;'")
 
         mail.Attachments.Add(os.path.join(sheet_folder, file))
 
         mail.To = emailto
         mail.CC = ccto
-        mail.Subject = f'OT Report: {datetoday.strftime("%m/%d/%Y")} {subject_header}'
+        mail.Subject = f'OT Report, from {first_day_of_month.strftime("%m/%d/%Y")} - {datetoday.strftime("%m/%d/%Y")} {subject_header}'
         mail.HTMLBody = f"""
             <html>
             <head>
@@ -181,13 +196,10 @@ def send_email (filepath):
                 padding: 8px;
                 text-align: left;
             }}
-            th {{
-                background-color: #FF2B3F;
-            }}
             </style>
             </head>
             <body>
-                <p>Good day, Here are the summary of work hours as of: {datetoday.strftime("%m/%d/%Y")}</p>
+                <p>Good day, Here are the <b>Summary of work hours</b> from {first_day_of_month.strftime("%m/%d/%Y")} - {datetoday.strftime("%m/%d/%Y")}</p>
                 <p>Attached is from the report file: {os.path.basename(filepath)}</p>
 
                 <h1>Employees with Positive Variance</h1>
@@ -267,10 +279,8 @@ def send_email_clp(filepath):
         try:
             subject_header = config.loc[config['Group_Code'] == int(sheet_number), 'NAME_sched'].values[0]
             #Commented because of testing
-            # emailto = config.loc[config['Group_Code']== int(sheet_number), 'SEND_to'].values[0]
-            # ccto = config.loc[config['Group_Code']== int(sheet_number), 'CC_S'].values[0]
-            emailto = 'vjdelrosario@avatco.com'
-            ccto = 'vjdelrosario@avatco.com;TTPhan@avatco.com'
+            emailto = config.loc[config['Group_Code']== int(sheet_number), 'SEND_to'].values[0]
+            ccto = config.loc[config['Group_Code']== int(sheet_number), 'CC_S'].values[0]
         except Exception as e:
             subject_header = 'Schedule Group Not in Config'
             emailto = 'vjdelrosario@avatco.com'
@@ -283,7 +293,7 @@ def send_email_clp(filepath):
 
         mail.To = emailto
         mail.CC = ccto
-        mail.Subject = f'CLP Report: {datetoday.strftime("%m/%d/%Y")} {subject_header}'
+        mail.Subject = f'CLP Report from {first_day_of_month.strftime("%m/%d/%Y")} -  {datetoday.strftime("%m/%d/%Y")} {subject_header}'
         mail.HTMLBody = f"""
             <html>
             <head>
@@ -302,7 +312,7 @@ def send_email_clp(filepath):
             </style>
             </head>
             <body>
-                <p>Good day, Here are the summary of CLP as of: {datetoday.strftime("%m/%d/%Y")}</p>
+                <p>Good day, Here are the summary of <b>CA Meal Penalty</b> from {first_day_of_month.strftime("%m/%d/%Y")} -  {datetoday.strftime("%m/%d/%Y")}</p>
                 <p>Attached is from the report file: {os.path.basename(filepath)}</p>
 
                 <h2>Summary of the Report:</h2>
@@ -333,10 +343,10 @@ def send_email_missing(filepath):
 
         try:
             subject_header = config.loc[config['Group_Code'] == int(sheet_number), 'NAME_sched'].values[0]
-            # emailto = config.loc[config['Group_Code']== int(sheet_number), 'SEND_to'].values[0]
-            # ccto = config.loc[config['Group_Code']== int(sheet_number), 'CC_S'].values[0]
-            emailto = 'vjdelrosario@avatco.com'
-            ccto = 'vjdelrosario@avatco.com;TTPhan@avatco.com'
+            emailto = config.loc[config['Group_Code']== int(sheet_number), 'SEND_to'].values[0]
+            ccto = config.loc[config['Group_Code']== int(sheet_number), 'CC_S'].values[0]
+            # emailto = 'vjdelrosario@avatco.com'
+            # ccto = 'vjdelrosario@avatco.com;TTPhan@avatco.com'
         except Exception as e:
             subject_header = 'Schedule Group Not in Config'
             emailto = 'vjdelrosario@avatco.com'
@@ -350,7 +360,7 @@ def send_email_missing(filepath):
 
         mail.To = emailto
         mail.CC = ccto
-        mail.Subject = f'Missing Punches Report: {datetoday.strftime("%m/%d/%Y")} {subject_header}'
+        mail.Subject = f'Missing Punches Report from {first_day_of_month.strftime("%m/%d/%Y")} - {datetoday.strftime("%m/%d/%Y")} {subject_header}'
         mail.HTMLBody = f"""
             <html>
             <head>
@@ -369,7 +379,7 @@ def send_email_missing(filepath):
             </style>
             </head>
             <body>
-                <p>Good day, Here are the summary of missing punches as of: {datetoday.strftime("%m/%d/%Y")}</p>
+                <p>Good day, Here are the summary of <b>Missing Punches</b> from {first_day_of_month.strftime("%m/%d/%Y")} - {datetoday.strftime("%m/%d/%Y")}</p>
                 <p>Attached is from the report file: {os.path.basename(filepath)}</p>
 
                 <h2>Summary of the Report:</h2>
