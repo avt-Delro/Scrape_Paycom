@@ -397,9 +397,6 @@ def send_email_missing(filepath):
     os.remove(filepath)
 
 
-
-
-
 paycom_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 1)
 create_report(paycom_filepath)
 send_email(paycom_filepath)
