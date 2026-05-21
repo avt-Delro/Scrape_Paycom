@@ -60,7 +60,7 @@ def paycom_scraping(weblink, username, password, client_code, int_choice = 1):
                 page.get_by_role("row", name="Favorite Missing Punches w").locator("input[type=\"button\"]").click()
             elif int_choice == 3:
                 page.get_by_role("row", name="Favorite CLP w Groups Time").locator("input[type=\"button\"]").click()
-            page.get_by_role("button", name="Download").wait_for(state = 'visible')
+            page.get_by_role("button", name="Download").wait_for(timeout= 420000)
             
             
             with page.expect_download() as download_info:
@@ -190,16 +190,16 @@ def send_email (filepath):
                 <p>Good day, Here are the summary of work hours as of: {datetoday.strftime("%m/%d/%Y")}</p>
                 <p>Attached is from the report file: {os.path.basename(filepath)}</p>
 
-                <h2>Summary of the Report:</h2>
-                {html_df}
-                <br>
-
                 <h1>Employees with Positive Variance</h1>
                 {html_positive}
                 <br>
 
                 <h1>Employees with Negative Variance</h1>
                 {html_negative}
+                <br>
+
+                <h2>Summary of the Report:</h2>
+                {html_df}
                 <br>
 
                 <h1>Employees without Scheduled Hours</h1>
