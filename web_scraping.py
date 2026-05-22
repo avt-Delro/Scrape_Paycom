@@ -65,7 +65,7 @@ def paycom_scraping(weblink, username, password, client_code, int_choice = 1):
                 page.get_by_role("row", name="Favorite Missing Punches w").locator("input[type=\"button\"]").click()
             elif int_choice == 3:
                 page.get_by_role("row", name="Favorite CLP w Groups Time").locator("input[type=\"button\"]").click()
-            page.get_by_role("button", name="Download").wait_for(timeout= 420000)
+            page.get_by_role("button", name="Download").wait_for(timeout= 600000)
             
             
             with page.expect_download() as download_info:
@@ -316,6 +316,7 @@ def send_email_clp(filepath):
         df_clp = df.loc[df['Meal Penalty Hours'] > 0, ['EECode', 'Lastname', 'Firstname', 'Meal Penalty Hours']]
         if len(df_clp)>0:
             df_clp_summary_to_html = df_clp.to_html(index=False)
+            df_clp_summary_to_html = df_clp_summary_to_html.replace("<thead", "<thead style='background-color:#FF1A1A; color:white;'")
         else:
             df_clp_summary_to_html = "<p><b style = text-transform:uppercase;>No meal penalties for this period.</b></p>"
 
@@ -335,12 +336,6 @@ def send_email_clp(filepath):
             th, td {{
                 padding: 8px;
                 text-align: left;
-            }}
-            th {{
-                background-color: #FF2B3F;
-            }}
-            uppercase{{
-                text-transform: uppercase;
             }}
             </style>
             </head>
@@ -391,6 +386,8 @@ def send_email_missing(filepath):
         df.sort_values(by= 'Date', ascending = True, inplace = True)
         df_missing_summary = df[['EE Code', 'Date' ,'Last Name', 'First Name', 'In Punch Time', 'Out Punch Time']]
         df_missing_summary_to_html = df_missing_summary.to_html(index=False)
+        df_missing_summary_to_html = df_missing_summary_to_html.replace("<thead", "<thead style='background-color:#FF1A1A; color:white;'")
+
 
         mail.Attachments.Add(os.path.join(sheet_folder, file))
 
@@ -408,9 +405,6 @@ def send_email_missing(filepath):
             th, td {{
                 padding: 8px;
                 text-align: left;
-            }}
-            th {{
-                background-color: #FF2B3F;
             }}
             </style>
             </head>
@@ -433,15 +427,15 @@ def send_email_missing(filepath):
     os.remove(filepath)
 
 
-# paycom_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 1)
-# create_report(paycom_filepath)
-# send_email(paycom_filepath)
+paycom_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 1)
+create_report(paycom_filepath)
+send_email(paycom_filepath)
 missingpunches_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 2)
 create_missing_report(missingpunches_filepath)
 send_email_missing(missingpunches_filepath)
-# clp_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 3)
-# create_clp_report(clp_filepath)
-# send_email_clp(clp_filepath)
+clp_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 3)
+create_clp_report(clp_filepath)
+send_email_clp(clp_filepath)
 
 
 
