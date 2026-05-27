@@ -252,7 +252,7 @@ def send_email (filepath):
         mail.Send()
         print('Email Sent')
         
-    os.remove(filepath)
+    
 
 def create_missing_report(file):
     df = pd.read_excel(file)
@@ -355,7 +355,6 @@ def send_email_clp(filepath):
         mail.Send()
         print('Email Sent')
         
-    os.remove(filepath)
 
 def send_email_missing(filepath):
     outlook = win32.Dispatch("Outlook.Application")
@@ -424,18 +423,17 @@ def send_email_missing(filepath):
         mail.Send()
         print('Email Sent')
         
-    os.remove(filepath)
 
 
-paycom_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 1)
-create_report(paycom_filepath)
-send_email(paycom_filepath)
-missingpunches_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 2)
-create_missing_report(missingpunches_filepath)
-send_email_missing(missingpunches_filepath)
-clp_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 3)
-create_clp_report(clp_filepath)
-send_email_clp(clp_filepath)
+# paycom_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 1)
+# create_report(paycom_filepath)
+# send_email(paycom_filepath)
+# missingpunches_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 2)
+# create_missing_report(missingpunches_filepath)
+# send_email_missing(missingpunches_filepath)
+# clp_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 3)
+# create_clp_report(clp_filepath)
+# send_email_clp(clp_filepath)
 
 
 
