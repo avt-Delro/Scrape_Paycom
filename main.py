@@ -51,8 +51,6 @@ def main():
         weekly_scraping.send_email_we_month('vjdelrosario@avatco.com', 'vjdelrosario@avatco.com',paycom_filepath)
         weekly_scraping.send_email_missing_we_month('vjdelrosario@avatco.com', 'vjdelrosario@avatco.com', missingpunches_filepath)
         weekly_scraping.send_email_clp_we_month('vjdelrosario@avatco.com', 'vjdelrosario@avatco.com', clp_filepath)
-    
-
 
 
 if __name__ == "__main__":

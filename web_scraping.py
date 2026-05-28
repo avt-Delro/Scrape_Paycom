@@ -65,7 +65,7 @@ def paycom_scraping(weblink, username, password, client_code, int_choice = 1):
                 page.get_by_role("row", name="Favorite Missing Punches w").locator("input[type=\"button\"]").click()
             elif int_choice == 3:
                 page.get_by_role("row", name="Favorite CLP w Groups Time").locator("input[type=\"button\"]").click()
-            page.get_by_role("button", name="Download").wait_for(timeout= 600000)
+            page.get_by_role("button", name="Download").wait_for(timeout= 700000)
             
             
             with page.expect_download() as download_info:
