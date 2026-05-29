@@ -65,7 +65,7 @@ def paycom_scraping(weblink, username, password, client_code, int_choice = 1):
                 page.get_by_role("row", name="Favorite Missing Punches w").locator("input[type=\"button\"]").click()
             elif int_choice == 3:
                 page.get_by_role("row", name="Favorite CLP w Groups Time").locator("input[type=\"button\"]").click()
-            page.get_by_role("button", name="Download").wait_for(timeout= 700000)
+            page.get_by_role("button", name="Download").wait_for(timeout= 600000)
             
             
             with page.expect_download() as download_info:
@@ -267,12 +267,15 @@ def create_missing_report(file):
 
 def create_clp_summary(file):
     df = pd.read_excel(file)
+    df.rename(columns = {'InPunchTime':'Date', 'EarnHours': 'Meal Penalty Hours'}, inplace = True)
 
     #Since Duplicate column headers, Pandas renamed the second column .1
     summary = (
-        df.groupby(['EECode', 'Lastname', 'Firstname'], as_index=False)['EarnHours'].sum(min_count = 1)
+        df.groupby(['EECode', 'Lastname', 'Firstname'], as_index=False)['Meal Penalty Hours'].sum(min_count = 1)
     )
-    summary.rename(columns = {'EarnHours': 'Meal Penalty Hours'}, inplace = True)
+    new_df_clp = df.loc[df['Meal Penalty Hours'] > 0, ['Date',  'EECode', 'Lastname', 'Firstname', 'Meal Penalty Hours',"EarnCode", "HomeDepartment", "HomeAllocation", "Pay Class","Home Job Desc","Badge","Employee Approved","Supervisor Approved"]]
+
+    create_sheet(file, new_df_clp.to_dict(orient="records"), 'Sheet1')
     create_sheet(file, summary.to_dict(orient="records"), 'Summary')
 
 def create_clp_report(file):

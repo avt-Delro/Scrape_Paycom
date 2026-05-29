@@ -157,11 +157,16 @@ def send_email_we_month (toemail,ccemail, filepath):
  
 def create_clp_summary_we_month(file):
     df = pd.read_excel(file)
+    df.rename(columns = {'InPunchTime':'Date', 'EarnHours': 'Meal Penalty Hours'}, inplace = True)
+    
  
     #Since Duplicate column headers, Pandas renamed the second column .1
     summary = (
-        df.groupby(['EECode', 'Lastname', 'Firstname'], as_index=False)['EarnHours'].sum(min_count = 1)
+        df.groupby(['EECode', 'Lastname', 'Firstname'], as_index=False)['Meal Penalty Hours'].sum(min_count = 1)
     )
+    new_df_clp = df.loc[df['Meal Penalty Hours'] > 0, ['Date',  'EECode', 'Lastname', 'Firstname', 'Meal Penalty Hours',"EarnCode", "HomeDepartment", "HomeAllocation", "Pay Class","Home Job Desc","Badge","Employee Approved","Supervisor Approved"]]
+
+    create_sheet(file, new_df_clp.to_dict(orient="records"), 'Sheet1')
     create_sheet(file, summary.to_dict(orient="records"), 'Summary')
  
 def send_email_missing_we_month(toemail,ccemail,filepath):
