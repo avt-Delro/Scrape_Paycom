@@ -159,7 +159,6 @@ def create_clp_summary_we_month(file):
     df = pd.read_excel(file)
     df.rename(columns = {'InPunchTime':'Date', 'EarnHours': 'Meal Penalty Hours'}, inplace = True)
     
- 
     #Since Duplicate column headers, Pandas renamed the second column .1
     summary = (
         df.groupby(['EECode', 'Lastname', 'Firstname'], as_index=False)['Meal Penalty Hours'].sum(min_count = 1)
