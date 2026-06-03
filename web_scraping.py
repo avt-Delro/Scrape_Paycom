@@ -8,6 +8,7 @@ from datetime import datetime
 import calendar
 import pandas as pd
 from openpyxl import load_workbook
+from logging_conf import setup_logger, send_email_err_report
 
 
 
@@ -22,6 +23,7 @@ email = env.sendemail
 
 datetoday = datetime.today()
 first_day_of_month = datetoday.replace(day=1)
+logger, log_file = setup_logger('paycom_scraping')
 
 
 
@@ -251,6 +253,11 @@ def send_email (filepath):
         
         mail.Send()
         print('Email Sent')
+        os.remove(os.path.join(sheet_folder, file))
+        logger.info('Removed File')
+    os.remove(filepath)
+
+
         
     
 
@@ -357,6 +364,9 @@ def send_email_clp(filepath):
         
         mail.Send()
         print('Email Sent')
+        os.remove(os.path.join(sheet_folder, file))
+        logger.info('Removed File')
+    os.remove(filepath)
         
 
 def send_email_missing(filepath):
@@ -425,6 +435,9 @@ def send_email_missing(filepath):
         
         mail.Send()
         print('Email Sent')
+        os.remove(os.path.join(sheet_folder, file))
+        logger.info('Removed File')
+    os.remove(filepath)
         
 
 
