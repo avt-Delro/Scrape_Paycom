@@ -42,8 +42,8 @@ def create_sheet(filepath, data_row, sheetname):
     with pd.ExcelWriter(filepath, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
         df.to_excel(writer,  sheet_name=sheetname, index=False)
 
-def create_report_summary_we_month(file, sheet):
-    df = pd.read_excel(file, sheet_name=sheet)
+def create_report_summary_we_month(file):
+    df = pd.read_excel(file)
  
     cols = ["Scheduled Hours", "Actual Hours", "Variance"]
     df[cols] = df[cols].apply(pd.to_numeric, errors="coerce").fillna(0)
@@ -165,7 +165,7 @@ def create_clp_summary_we_month(file):
     )
     new_df_clp = df.loc[df['Meal Penalty Hours'] > 0, ['Date',  'EECode', 'Lastname', 'Firstname', 'Meal Penalty Hours',"EarnCode", "HomeDepartment", "HomeAllocation", "Pay Class","Home Job Desc","Badge","Employee Approved","Supervisor Approved"]]
 
-    create_sheet(file, new_df_clp.to_dict(orient="records"), 'Sheet1')
+    create_sheet(file, new_df_clp.to_dict(orient="records"), 'CLP w Groups')
     create_sheet(file, summary.to_dict(orient="records"), 'Summary')
  
 def send_email_missing_we_month(toemail,ccemail,filepath):
