@@ -49,12 +49,11 @@ def main():
         logger.info("Daily CLP report created and email sent.")
         
         if day_today.weekday() == 0:  # Check if it's Monday
-            weekly_scraping.create_report_we_month(paycom_filepath)
-            weekly_scraping.create_report_summary_we_month(paycom_filepath)
-            weekly_scraping.create_clp_summary_we_month(clp_filepath)
-            weekly_scraping.send_email_we_month('vjdelrosario@avatco.com', 'vjdelrosario@avatco.com;TTPhan@avatco.com',paycom_filepath)
-            weekly_scraping.send_email_missing_we_month('vjdelrosario@avatco.com', 'vjdelrosario@avatco.com;TTPhan@avatco.com', missingpunches_filepath)
-            weekly_scraping.send_email_clp_we_month('vjdelrosario@avatco.com', 'vjdelrosario@avatco.com;TTPhan@avatco.com', clp_filepath)
+            weekly_scraping.create_report_summary_we_month(paycom_filepath, None)
+            weekly_scraping.create_clp_summary_we_month(clp_filepath, None)
+            weekly_scraping.send_email_we_month('vjdelrosario@avatco.com', 'vjdelrosario@avatco.com',paycom_filepath)
+            weekly_scraping.send_email_missing_we_month('vjdelrosario@avatco.com', 'vjdelrosario@avatco.com', missingpunches_filepath)
+            weekly_scraping.send_email_clp_we_month('vjdelrosario@avatco.com', 'vjdelrosario@avatco.com', clp_filepath)
 
         if datetoday.day == last_day:  # Check if it's the last day of the month
             weekly_scraping.send_email_we_month('vjdelrosario@avatco.com', 'vjdelrosario@avatco.com',paycom_filepath)
@@ -71,6 +70,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+
     
     
     
