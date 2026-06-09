@@ -42,7 +42,7 @@ def create_sheet(filepath, data_row, sheetname):
     with pd.ExcelWriter(filepath, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
         df.to_excel(writer,  sheet_name=sheetname, index=False)
 
-def create_report_summary_we_month(file):
+def create_report_summary_we_month(file, filters=None):
     df = pd.read_excel(file)
  
     cols = ["Scheduled Hours", "Actual Hours", "Variance"]
@@ -51,7 +51,16 @@ def create_report_summary_we_month(file):
     df['Punch Date'] = pd.to_datetime(df['Punch Date'], errors='coerce')
  
     df_filtered = df[df['Punch Date']<= datetoday.strftime('%m/%d/%Y')]
- 
+
+    
+    if filters:
+        for col, val in filters.items():
+            if isinstance(val, list):
+                df_filtered = df_filtered[df_filtered[col].isin(val)]
+            else:
+                df_filtered = df_filtered[df_filtered[col] == val]
+        create_sheet(file, df_filtered.to_dict(orient="records"), 'Actual v Schedule')
+
     #Since Duplicate column headers, Pandas renamed the second column .1
     summary = (
         df_filtered.groupby("Employee", as_index=False)
@@ -62,27 +71,6 @@ def create_report_summary_we_month(file):
         })
     )
     create_sheet(file, summary.to_dict(orient="records"), 'Summary')
- 
-def create_report_we_month(file):
-    df = pd.read_excel(file)
- 
-    cols = ["Scheduled Hours", "Actual Hours", "Variance"]
-    df[cols] = df[cols].apply(pd.to_numeric, errors="coerce").fillna(0)
- 
-    df['Punch Date'] = pd.to_datetime(df['Punch Date'], errors='coerce')
- 
-    df_filtered = df[df['Punch Date']<= datetoday.strftime('%m/%d/%Y')]
- 
- 
-    summary = (
-        df_filtered.groupby("Employee", as_index=False)
-        .agg({
-            "Scheduled Hours": "sum",
-            "Actual Hours": "sum",
-            "Variance": "sum",
-        })
-    )
-    create_sheet(file, summary.to_dict(orient="records"), "Summary")
  
  
 def send_email_we_month (toemail,ccemail, filepath):
@@ -155,20 +143,27 @@ def send_email_we_month (toemail,ccemail, filepath):
     mail.Send()
     print('Email Sent')
  
-def create_clp_summary_we_month(file):
+def create_clp_summary_we_month(file, filters = None):
     df = pd.read_excel(file)
     df.rename(columns = {'InPunchTime':'Date', 'EarnHours': 'Meal Penalty Hours'}, inplace = True)
+
+    if filters:
+        for col, val in filters.items():
+            if isinstance(val, list):
+                df = df[df[col].isin(val)]
+            else:
+                df = df[df[col] == val]
     
     #Since Duplicate column headers, Pandas renamed the second column .1
     summary = (
         df.groupby(['EECode', 'Lastname', 'Firstname'], as_index=False)['Meal Penalty Hours'].sum(min_count = 1)
     )
-    new_df_clp = df.loc[df['Meal Penalty Hours'] > 0, ['Date',  'EECode', 'Lastname', 'Firstname', 'Meal Penalty Hours',"EarnCode", "HomeDepartment", "HomeAllocation", "Pay Class","Home Job Desc","Badge","Employee Approved","Supervisor Approved"]]
+    new_df_clp = df.loc[df['Meal Penalty Hours'] > 0, ['Date',  'EECode', 'Lastname', 'Firstname', 'Meal Penalty Hours',"EarnCode", "HomeDepartment", "HomeAllocation", "Pay Class","Home Job Desc","Badge","Employee Approved","Supervisor Approved", 'Schedule Group']]
 
     create_sheet(file, new_df_clp.to_dict(orient="records"), 'CLP w Groups')
     create_sheet(file, summary.to_dict(orient="records"), 'Summary')
  
-def send_email_missing_we_month(toemail,ccemail,filepath):
+def send_email_missing_we_month(toemail,ccemail,filepath, filters = None):
     outlook = win32.Dispatch("Outlook.Application")
    
     outlook_ap = outlook.GetNamespace("MAPI")
@@ -179,11 +174,22 @@ def send_email_missing_we_month(toemail,ccemail,filepath):
     mail.To = toemail
     mail.CC = ccemail
  
-    mail.Attachments.Add(filepath)
+    
  
     df = pd.read_excel(filepath)
  
     df.sort_values(by='Date', ascending=True, inplace=True)
+
+    if filters:
+        for col, val in filters.items():
+            if isinstance(val, list):
+                df = df[df[col].isin(val)]
+            else:
+                df = df[df[col] == val]
+        create_sheet(filepath, df.to_dict(orient='records'), 'Missing Punches w')
+
+    mail.Attachments.Add(filepath)
+
     df_missing_summary = df[['EE Code', 'Date' ,'Last Name', 'First Name', 'In Punch Time', 'Out Punch Time']]
     df_missing_summary_to_html = df_missing_summary.to_html(index=False)
  

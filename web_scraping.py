@@ -255,11 +255,6 @@ def send_email (filepath):
         print('Email Sent')
         os.remove(os.path.join(sheet_folder, file))
         logger.info('Removed File')
-    os.remove(filepath)
-
-
-        
-    
 
 def create_missing_report(file):
     df = pd.read_excel(file)
@@ -275,6 +270,8 @@ def create_missing_report(file):
 def create_clp_summary(file):
     df = pd.read_excel(file)
     df.rename(columns = {'InPunchTime':'Date', 'EarnHours': 'Meal Penalty Hours'}, inplace = True)
+
+    df['Date'] = pd.to_datetime(df['Date']).dt.date
 
     #Since Duplicate column headers, Pandas renamed the second column .1
     summary = (
@@ -366,7 +363,7 @@ def send_email_clp(filepath):
         print('Email Sent')
         os.remove(os.path.join(sheet_folder, file))
         logger.info('Removed File')
-    os.remove(filepath)
+
         
 
 def send_email_missing(filepath):
@@ -437,8 +434,7 @@ def send_email_missing(filepath):
         print('Email Sent')
         os.remove(os.path.join(sheet_folder, file))
         logger.info('Removed File')
-    os.remove(filepath)
-        
+
 
 
 # paycom_filepath = paycom_scraping('https://www.paycomonline.net/v4/cl/cl-login.php', paycom_user, paycom_pass, client_code, 1)
