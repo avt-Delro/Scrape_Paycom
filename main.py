@@ -65,7 +65,7 @@ def main():
         error_message = str(e)
         stack_trace = traceback.format_exc()
         logger.error(f"Error Type: {error_type}\nError Message: {error_message}\nStack Trace: {stack_trace}")
-        send_email_err_report(err_email, log_file, error_message, error_type, stack_trace)
+        send_email_err_report(err_email, error_message, error_type, stack_trace)
 
 
 if __name__ == "__main__":

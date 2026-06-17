@@ -52,16 +52,13 @@ def setup_logger(name="app_logger", log_dir="logs", level=logging.INFO):
 
     return logger, log_filename
 
-def send_email_err_report(toemail, filepath, error_message, error_type, stack_trace):
-    
+def send_email_err_report(toemail, error_message, error_type, stack_trace):
     outlook = win32.Dispatch('outlook.application')
     mail = outlook.CreateItem(0)
     mail.To = toemail
     mail.Subject = 'PLEASE CHECK: Paycom Scraping Error Report'
     mail.Body = f"An error occurred during the Paycom scraping process.\n\nError Type: {error_type}\nError Message: {error_message}\nStack Trace:\n{stack_trace}"
     
-    # Attach the log file if it exists
-    if os.path.exists(filepath):
-        mail.Attachments.Add(filepath)
+   
     
     mail.Send()

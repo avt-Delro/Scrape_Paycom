@@ -46,7 +46,7 @@ def paycom_scraping(weblink, username, password, client_code, int_choice = 1):
             context = p.chromium.launch_persistent_context(
                     user_data_dir="edge_automation_profile",
                     channel="msedge",
-                    headless=False
+                    headless=True
                 )
 
 
